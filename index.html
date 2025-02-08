@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -125,7 +124,6 @@
 <body>
     <div class="container">
         <h1>Expense Tracker</h1>
-        <h3 id="lastVisitMessage"></h3>
         <div class="summary">
             <div>
                 <h3>Set Budget</h3>
@@ -169,6 +167,7 @@
         function setBudget() {
             budget = parseFloat(document.getElementById("budget").value) || 0;
             updateSummary();
+            saveData();
         }
 
         function addExpense() {
@@ -189,6 +188,7 @@
 
                 totalSpent += expenseAmount;
                 updateSummary();
+                saveData();
 
                 document.getElementById("expenseName").value = "";
                 document.getElementById("expenseAmount").value = "";
@@ -203,25 +203,51 @@
             document.getElementById("remainingBudget").textContent = `₹${remainingBudget}`;
         }
 
-        // Last visit feature
-        function saveLastVisit() {
-            const now = new Date().toLocaleString();
-            localStorage.setItem("lastVisit", now);
+        function saveData() {
+            const table = document.getElementById("expenseTable");
+            const expenses = [];
+            for (const row of table.rows) {
+                const cells = row.cells;
+                if (cells.length === 3) {
+                    expenses.push({
+                        date: cells[0].textContent,
+                        name: cells[1].textContent,
+                        amount: cells[2].textContent,
+                    });
+                }
+            }
+
+            const data = {
+                budget,
+                totalSpent,
+                expenses,
+            };
+            localStorage.setItem("expenseTrackerData", JSON.stringify(data));
         }
 
-        function loadLastVisit() {
-            const lastVisit = localStorage.getItem("lastVisit");
-            const message = lastVisit
-                ? `Welcome back! Your last visit was on ${lastVisit}.`
-                : "Welcome! This is your first visit.";
-            document.getElementById("lastVisitMessage").textContent = message;
+        function loadData() {
+            const data = JSON.parse(localStorage.getItem("expenseTrackerData"));
+            if (data) {
+                budget = data.budget || 0;
+                totalSpent = data.totalSpent || 0;
+
+                document.getElementById("budget").value = budget;
+                updateSummary();
+
+                const table = document.getElementById("expenseTable");
+                data.expenses.forEach((expense) => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td class="date">${expense.date}</td>
+                        <td>${expense.name}</td>
+                        <td>${expense.amount}</td>
+                    `;
+                    table.appendChild(row);
+                });
+            }
         }
 
-        // Load last visit info and update it on page load
-        window.onload = () => {
-            loadLastVisit();
-            saveLastVisit();
-        };
+        window.onload = loadData;
     </script>
 </body>
 </html>
